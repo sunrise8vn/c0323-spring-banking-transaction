@@ -3,6 +3,7 @@ package com.cg.service.customer;
 import com.cg.model.Customer;
 import com.cg.model.Deposit;
 import com.cg.model.LocationRegion;
+import com.cg.model.dto.CustomerResDTO;
 import com.cg.repository.ICustomerRepository;
 import com.cg.repository.IDepositRepository;
 import com.cg.repository.ILocationRegionRepository;
@@ -39,6 +40,11 @@ public class CustomerServiceImpl implements ICustomerService {
     }
 
     @Override
+    public List<CustomerResDTO> findAllCustomerResDTO(Boolean deleted) {
+        return customerRepository.findAllCustomerResDTO(deleted);
+    }
+
+    @Override
     public Customer create(Customer customer) {
         LocationRegion locationRegion = customer.getLocationRegion();
         locationRegionRepository.save(locationRegion);
@@ -57,13 +63,6 @@ public class CustomerServiceImpl implements ICustomerService {
         Long customerId = deposit.getCustomer().getId();
         BigDecimal transactionAmount = deposit.getTransactionAmount();
         customerRepository.incrementBalance(customerId, transactionAmount);
-
-//        BigDecimal currentBalance = customer.getBalance();
-
-//        BigDecimal newBalance = currentBalance.add(transactionAmount);
-//        customer.setBalance(currentBalance);
-//        customerRepository.save(customer);
-
     }
 
     @Override

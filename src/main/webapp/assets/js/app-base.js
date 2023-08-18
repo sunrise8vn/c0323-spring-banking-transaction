@@ -1,6 +1,6 @@
 class AppBase {
-  static DOMAIN_SERVER = 'http://localhost:3300';
-  static API_SERVER = this.DOMAIN_SERVER;
+  static DOMAIN_SERVER = location.origin;
+  static API_SERVER = this.DOMAIN_SERVER + '/api';
 
   static API_CUSTOMER = this.API_SERVER + '/customers';
 }

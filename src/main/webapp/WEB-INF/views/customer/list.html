@@ -21,8 +21,8 @@
                 <tr>
                     <th>#</th>
                     <th>FullName</th>
-                    <th>Phone</th>
                     <th>Email</th>
+                    <th>Phone</th>
                     <th>Balance</th>
                     <th>Province</th>
                     <th>District</th>
@@ -75,6 +75,9 @@
     <!-- Modal Update -->
     <th:block th:replace="customer/modalUpdate" />
 
+    <!-- Modal Deposit -->
+    <th:block th:replace="customer/modalDeposit" />
+
     <script src="/assets/jquery/jquery-3.5.1.min.js"></script>
     <script src="/assets/jquery/jquery.validate.min.js"></script>
     <script src="/assets/bootstrap/js/bootstrap.bundle.min.js"></script>
@@ -87,7 +90,8 @@
             urls: {
                 getAllCustomers: AppBase.API_CUSTOMER,
                 getCustomerById: AppBase.API_CUSTOMER,
-                createCustomer: AppBase.API_CUSTOMER
+                createCustomer: AppBase.API_CUSTOMER,
+                deposit: AppBase.API_CUSTOMER + '/deposit'
             },
             elements: {},
             loadData: {},
@@ -96,6 +100,8 @@
 
         let locationRegion = new LocationRegion();
         let customer = new Customer();
+
+        page.elements.tbCustomerBody = $('#tbCustomerBody');
 
         page.elements.btnShowModalCreate = $('#btnShowModalCreate');
         page.elements.modalCreate = $('#modalCreate');
@@ -119,6 +125,15 @@
         page.elements.wardUp = $('#wardUp');
         page.elements.addressUp = $('#addressUp');
         page.elements.btnUpdate = $('#btnUpdate');
+
+        page.elements.modalDeposit = $('#modalDeposit');
+        page.elements.frmDeposit = $('#frmDeposit');
+        page.elements.idDep = $('#idDep');
+        page.elements.fullNameDep = $('#fullNameDep');
+        page.elements.emailDep = $('#emailDep');
+        page.elements.balanceDep = $('#balanceDep');
+        page.elements.transactionAmountDep = $('#transactionAmountDep');
+        page.elements.btnDeposit = $('#btnDeposit');
 
 
         page.commands.getAllProvinces = () => {
@@ -189,7 +204,7 @@
             return `<option value="${obj.ward_id}">${obj.ward_name}</option>`;
         }
 
-        const renderCustomer = (obj) => {
+        page.commands.renderCustomer = (obj) => {
             return `
                     <tr id="tr_${obj.id}">
                         <td>${obj.id}</td>
@@ -207,7 +222,7 @@
                             </button>
                         </td>
                         <td>
-                            <button class="btn btn-outline-success">
+                            <button class="btn btn-outline-success deposit" data-id="${obj.id}">
                                 <i class="fas fa-plus"></i>
                             </button>
                         </td>
@@ -261,18 +276,16 @@
             page.commands.getAllWardsByDistrictId(districtId, page.elements.wardUp);
         })
 
-        const strBody = $('#tbCustomerBody')
-
         page.commands.getAllCustomers = () => {
             return $.ajax({
                 type: 'get',
                 url: page.urls.getAllCustomers,
                 success: function (res) {
-                    strBody.empty();
+                    page.elements.tbCustomerBody.empty();
 
                     $.each(res, (index, item) => {
-                        const str = renderCustomer(item);
-                        $(strBody).prepend(str);
+                        const str = page.commands.renderCustomer(item);
+                        page.elements.tbCustomerBody.prepend(str);
                     })
                 }, error: function () {
                     alert('Error');
@@ -325,6 +338,87 @@
                     })
 
             })
+        }
+
+
+        page.commands.handleClickAllDepositButton = () => {
+            page.elements.tbCustomerBody.on('click', '.deposit', function () {
+                const customerId = $(this).data('id');
+
+                page.commands.getCustomerById(customerId).then((data) => {
+                    customer = data;
+
+                    page.elements.frmDeposit.trigger('reset');
+
+                    page.elements.idDep.val(customer.id);
+                    page.elements.fullNameDep.val(customer.fullName);
+                    page.elements.emailDep.val(customer.email);
+                    page.elements.balanceDep.val(customer.balance);
+
+                    page.elements.modalDeposit.modal('show');
+                }).catch((error) => {
+                    console.log(error);
+
+                    webToast.Danger({
+                        status: 'Lỗi tải dữ liệu khách hàng',
+                        message: '',
+                        delay: 2000,
+                        align: 'topright'
+                    });
+                })
+
+                page.elements.modalDeposit.modal('show');
+            })
+        }
+
+        page.commands.getCustomerById = (id) => {
+            return $.ajax({
+                url: page.urls.getCustomerById + '/' + id
+            })
+        }
+
+        page.commands.handleDeposit = () => {
+            const obj = {
+                customerId: page.elements.idDep.val(),
+                transactionAmount: page.elements.transactionAmountDep.val()
+            }
+
+            $.ajax({
+                headers: {
+                    'accept': 'application/json',
+                    'content-type': 'application/json'
+                },
+                type: 'POST',
+                url: page.urls.deposit,
+                data: JSON.stringify(obj)
+            })
+                .done((data) => {
+                    page.elements.modalDeposit.modal('hide');
+
+                    const str = page.commands.renderCustomer(data);
+                    $('#tr_' + obj.customerId).replaceWith(str);
+
+                    webToast.Success({
+                        status: 'Nạp tiền thành công',
+                        message: '',
+                        delay: 2000,
+                        align: 'topright'
+                    });
+                })
+                .fail((jqXHR) => {
+                    const message = jqXHR.responseJSON.message;
+
+                    const str = `<ul><li>${message}</li></ul>`;
+
+                    $('.error-area').empty().append(str).removeClass('hide');
+
+                    // webToast.Danger({
+                    //     status: message,
+                    //     message: '',
+                    //     delay: 2000,
+                    //     align: 'topright'
+                    // });
+                })
         }
 
         page.commands.handleCreateCustomer = () => {
@@ -477,6 +571,37 @@
             }
         })
 
+        page.elements.frmDeposit.validate({
+            rules: {
+                transactionAmountDep: {
+                    required: true,
+                    isNumberWithSpace: true
+                }
+            },
+            messages: {
+                transactionAmountDep: {
+                    required: 'Vui lòng nhập tiền giao dịch',
+                    isNumberWithSpace: 'Vui lòng nhập tiền giao dịch bằng ký tự số',
+                }
+            },
+            errorLabelContainer: "#modalDeposit .error-area",
+            errorPlacement: function (error, element) {
+                error.appendTo("#modalDeposit .error-area");
+            },
+            showErrors: function(errorMap, errorList) {
+                if (this.numberOfInvalids() > 0) {
+                    $("#modalDeposit .error-area").removeClass("hide").addClass("show");
+                } else {
+                    $("#modalDeposit .error-area").removeClass("show").addClass("hide").empty();
+                    $("#frmDeposit input.error").removeClass("error");
+                }
+                this.defaultShowErrors();
+            },
+            submitHandler: function () {
+                page.commands.handleDeposit();
+            }
+        })
+
         $.validator.addMethod("isEmail", function (value, element) {
             return this.optional(element) || /[a-z]+@[a-z]+\.[a-z]+/.test(value);
         }, "Vui lòng nhập đúng định dạng email");
@@ -485,8 +610,11 @@
             return this.optional(element) || /^\s*[0-9,\s]+\s*$/i.test(value);
         }, "Vui lòng nhập giá trị số");
 
+
         page.initializeControlEvent = () => {
             page.commands.handleClickAllEditButton();
+
+            page.commands.handleClickAllDepositButton();
 
             page.elements.btnShowModalCreate.on('click', () => {
                 page.elements.modalCreate.modal('show');
@@ -495,6 +623,14 @@
             page.elements.btnCreate.on('click', () => {
                 // page.commands.handleCreateCustomer();
                 $('#frmCreate').trigger('submit');
+            })
+
+            page.elements.btnDeposit.on('click', () => {
+                page.elements.frmDeposit.trigger('submit');
+            })
+
+            page.elements.modalDeposit.on('hide.bs.modal', () => {
+                $('.error-area').empty().addClass('hide');
             })
         }
 
