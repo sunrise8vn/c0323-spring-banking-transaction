@@ -1,5 +1,6 @@
 package com.cg.model;
 
+import com.cg.model.dto.CustomerDepositResDTO;
 import com.cg.model.dto.CustomerResDTO;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -61,6 +62,16 @@ public class Customer extends BaseEntity {
                 .setBalance(balance)
                 .setLocationRegion(locationRegion.toLocationRegionResDTO())
                 ;
+    }
 
+    public CustomerDepositResDTO toCustomerDepositResDTO() {
+        return new CustomerDepositResDTO()
+                .setId(id)
+                .setFullName(fullName)
+                .setEmail(email)
+                .setPhone(phone)
+                .setBalance(balance)
+                .setLocationRegion(locationRegion.toLocationRegionResDTO())
+                ;
     }
 }

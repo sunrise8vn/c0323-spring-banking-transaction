@@ -32,4 +32,12 @@ public interface ICustomerRepository extends JpaRepository<Customer, Long> {
             "WHERE cus.id = :customerId"
     )
     void incrementBalance(@Param("customerId") Long customerId, @Param("transactionAmount") BigDecimal transactionAmount);
+
+
+    @Modifying
+    @Query("UPDATE Customer AS cus " +
+            "SET cus.balance = cus.balance - :transactionAmount " +
+            "WHERE cus.id = :customerId"
+    )
+    void decrementBalance(@Param("customerId") Long customerId, @Param("transactionAmount") BigDecimal transactionAmount);
 }

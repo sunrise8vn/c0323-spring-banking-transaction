@@ -4,9 +4,7 @@ import com.cg.exception.DataInputException;
 import com.cg.model.Customer;
 import com.cg.model.Deposit;
 import com.cg.model.LocationRegion;
-import com.cg.model.dto.CustomerResDTO;
-import com.cg.model.dto.DepositReqDTO;
-import com.cg.model.dto.LocationRegionResDTO;
+import com.cg.model.dto.*;
 import com.cg.service.customer.ICustomerService;
 import com.cg.utils.ValidateUtils;
 import com.mysql.cj.log.Log;
@@ -15,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.DataInput;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -98,5 +95,22 @@ public class CustomerApi {
         Optional<Customer> updateCustomer = customerService.findById(deposit.getCustomer().getId());
 
         return new ResponseEntity<>(updateCustomer.get().toCustomerResDTO(), HttpStatus.OK);
+    }
+
+    @PostMapping("/transfer")
+    public ResponseEntity<?> transfer(@RequestBody TransferReqDTO transferReqDTO) {
+        customerService.transfer(transferReqDTO);
+
+        TransferResDTO transferResDTO = new TransferResDTO();
+        Optional<Customer> senderOptional = customerService.findById(Long.parseLong(transferReqDTO.getSenderId()));
+        Optional<Customer> recipientOptional = customerService.findById(Long.parseLong(transferReqDTO.getRecipientId()));
+
+        CustomerResDTO sender = senderOptional.get().toCustomerResDTO();
+        CustomerResDTO recipient = recipientOptional.get().toCustomerResDTO();
+
+        transferResDTO.setSender(sender);
+        transferResDTO.setRecipient(recipient);
+
+        return new ResponseEntity<>(transferResDTO, HttpStatus.OK);
     }
 }
